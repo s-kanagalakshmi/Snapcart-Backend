@@ -4,24 +4,29 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import userRoutes from './routes/UserRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
-// import productRoutes from './routes/ProductRoutes.js';
-
+import productRoutes from './routes/ProductRoutes.js';
+import uploadRoute from './routes/UploadRoutes.js';
+import paymentRoute from './routes/PaymentRoutes.js';
 
 // dotenv.config(); // Load environment variables first
+
 
 const app = express(); 
 
 app.use(cors());
 app.use(express.json());
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
+mongoose.connect('mongodb+srv://kanagalakshmimca16:ZoeqMTsthzSI3CuP@snapcartproducts.05pmugl.mongodb.net/snapcart?retryWrites=true&w=majority&appName=snapcartproducts')
+.then(() => console.log('MongoDB connected'))
   .catch((err) => console.log('MongoDB connection error:', err));
 
+
 // Route middleware
-app.use('/api/products', productRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/orders', orderRoutes);
+app.use('/products', productRoutes);
+app.use('/users', userRoutes);
+app.use('/orders', orderRoutes);
+app.use('/api/payment', paymentRoute);
+
+// app.use('/api', uploadRoute);
 
 // Root route
 app.get('/', (req, res) => {

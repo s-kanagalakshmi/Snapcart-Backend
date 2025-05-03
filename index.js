@@ -5,7 +5,7 @@ import cors from 'cors';
 import userRoutes from './routes/UserRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
 import productRoutes from './routes/ProductRoutes.js';
-import uploadRoute from './routes/UploadRoutes.js';
+import cartRoutes from './routes/CartRoutes.js'
 import paymentRoute from './routes/PaymentRoutes.js';
 
 // dotenv.config(); // Load environment variables first
@@ -20,11 +20,13 @@ mongoose.connect('mongodb+srv://kanagalakshmimca16:ZoeqMTsthzSI3CuP@snapcartprod
   .catch((err) => console.log('MongoDB connection error:', err));
 
 
+  
 // Route middleware
 app.use('/products', productRoutes);
 app.use('/users', userRoutes);
 app.use('/orders', orderRoutes);
-app.use('/api/payment', paymentRoute);
+app.use('/payment', paymentRoute);
+app.use('/cart', cartRoutes);
 
 // app.use('/api', uploadRoute);
 

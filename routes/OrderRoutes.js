@@ -1,34 +1,26 @@
-import express from 'express';
-import Order from '../models/Order.js';
+import mongoose from 'mongoose';
 
-const router = express.Router();
-
-// Create new order
-router.post('/', async (req, res) => {
-  const { userId, orderItems, totalPrice } = req.body;
-
-  const order = new Order({
-    user: userId,
-    orderItems,
-    totalPrice
-  });
-
-  try {
-    const savedOrder = await order.save();
-    res.status(201).json(savedOrder);
-  } catch (err) {
-    res.status(400).json({ error: 'Error creating order' });
+const orderItemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  qty: { type: Number, required: true },
+  price: { type: Number, required: true },
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
   }
 });
 
-// Get all orders (admin or user dashboard)
-router.get('/', async (req, res) => {
-  try {
-    const orders = await Order.find().populate('user').populate('orderItems.product');
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+const orderSchema = new mongoose.Schema({
+  userFirebaseId: {
+    type: String,
+    required: true
+  },
+  orderItems: [orderItemSchema],
+  totalPrice: { type: Number, required: true },
+  isPaid: { type: Boolean, default: false },
+  paidAt: { type: Date }
+}, { timestamps: true });
 
-export default router;
+const Order = mongoose.model('Order', orderSchema);
+export default Order;

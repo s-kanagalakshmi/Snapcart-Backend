@@ -1,61 +1,78 @@
 import express from 'express';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
 import Order from '../models/Order.js';
+import { verifyFirebaseToken } from '../middleware/firebaseAuth.js';
 
+dotenv.config();
 const router = express.Router();
 
 const razorpay = new Razorpay({
-  key_id: 'YOUR_KEY_ID',
-  key_secret: 'YOUR_KEY_SECRET'
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// Create order
-router.post('/create-order', async (req, res) => {
+router.post('/create-order', verifyFirebaseToken, async (req, res) => {
   const { totalPrice } = req.body;
 
   try {
-    const options = {
+    const order = await razorpay.orders.create({
       amount: totalPrice * 100,
       currency: 'INR',
-      receipt: `receipt_${Date.now()}`
-    };
-    const order = await razorpay.orders.create(options);
+      receipt: `rcpt_${Date.now()}`
+    });
     res.status(200).json(order);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create Razorpay order' });
   }
 });
-
-// Verify and save order
-router.post('/verify', async (req, res) => {
+router.post('/checkout', verifyFirebaseToken, async (req, res) => {
+  const { amount } = req.body;
+  try {
+    const order = await razorpay.orders.create({
+      amount,
+      currency: 'INR'
+    });
+    res.json(order);
+  } catch (err) {
+    console.error('Error creating Razorpay order:', err);
+    res.status(500).json({ error: 'Failed to create order' });
+  }
+});
+router.post('/verify', verifyFirebaseToken, async (req, res) => {
   const {
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
-    userId,
     orderItems,
     totalPrice
   } = req.body;
+  console.log(req.body); // Log the incoming request body
+ 
+  
+  const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest('hex');
 
-  const secret = 'YOUR_KEY_SECRET';
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-  const signature = hmac.digest('hex');
-
-  if (signature === razorpay_signature) {
-    const newOrder = new Order({
-      user: userId,
-      orderItems,
-      totalPrice,
-      isPaid: true,
-      paidAt: new Date()
-    });
-
-    await newOrder.save();
-    res.status(200).json({ success: true, message: 'Payment verified and order saved' });
+  if (expectedSignature === razorpay_signature) {
+    try {
+      const newOrder = new Order({
+        userFirebaseId: req.user.uid,
+        orderItems,
+        totalPrice,
+        isPaid: true,
+        paidAt: new Date()
+      });
+      console.log(`Expected Signature: ${expectedSignature}`);
+      console.log(`Received Signature: ${razorpay_signature}`);
+      await newOrder.save();
+      res.status(200).json({ success: true, message: 'Order saved successfully' });
+    } catch (err) {
+      res.status(400).json({ success: false, error: err.message });
+    }
   } else {
-    res.status(400).json({ success: false, message: 'Payment verification failed' });
+    res.status(400).json({ success: false, message: 'Signature mismatch' });
   }
 });
 

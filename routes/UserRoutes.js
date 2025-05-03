@@ -1,34 +1,30 @@
 import express from 'express';
 import User from '../models/User.js';
-// import bcrypt from 'bcryptjs';
+import { verifyFirebaseToken } from '../middleware/firebaseAuth.js';
 
 const router = express.Router();
 
-// Register user
-router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+// Create or get user
+router.post('/firebase-login', verifyFirebaseToken, async (req, res) => {
+  try {
+    // console.log('req.firebaseUser:', req.firebaseUser); // <== Add this
+    const { uid, email, name } = req.user;
 
-  const userExists = await User.findOne({ email });
-  if (userExists) return res.status(400).json({ error: 'User already exists' });
+    // const { uid, email, name } = req.firebaseUser; // Check this line
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    let user = await User.findOne({ firebaseUID: uid });
 
-  const newUser = new User({ name, email, password: hashedPassword });
-  await newUser.save();
-  res.status(201).json({ message: 'User registered successfully' });
+    if (!user) {
+      user = new User({ firebaseUID: uid, email, name });
+      await user.save();
+    }
+
+    res.json({ message: 'User authenticated', user });
+  } catch (error) {
+    console.error('User save error:', error); // <== Log full error
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// Login user
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ error: 'Invalid credentials' });
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
-
-  res.json({ message: 'Login successful', user });
-});
 
 export default router;

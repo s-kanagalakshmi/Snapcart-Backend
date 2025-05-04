@@ -7,8 +7,8 @@ import orderRoutes from './routes/OrderRoutes.js';
 import productRoutes from './routes/ProductRoutes.js';
 import cartRoutes from './routes/CartRoutes.js'
 import paymentRoute from './routes/PaymentRoutes.js';
-
 // dotenv.config(); // Load environment variables first
+const PORT = process.env.PORT || 5000;
 
 
 const app = express(); 
@@ -35,5 +35,4 @@ app.get('/', (req, res) => {
   res.send('Snapcart API running');
 });
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

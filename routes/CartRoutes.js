@@ -49,15 +49,7 @@ router.post('/remove', verifyFirebaseToken, async (req, res) => {
 
 
 
-// Get cart
-// router.get('/',verifyFirebaseToken, async (req, res) => {
-//   try {
-//     const cart = await Cart.findOne({ userId: req.user.uid }).populate('items.productId');
-//     res.json({ success: true, cart });
-//   } catch (error) {
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
+
 router.get('/', verifyFirebaseToken, async (req, res) => {
     try {
       const userId = req.user.uid;

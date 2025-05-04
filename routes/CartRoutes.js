@@ -1,9 +1,15 @@
 import express from 'express';
 import Cart from '../models/Cart.js';
 import { verifyFirebaseToken } from '../middleware/firebaseAuth.js';
-
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
 // import authMiddleware from '../middleware/firebaseAuth.js'; // Protect route
 const router = express.Router();
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 // Save or update cart
 router.post('/save', verifyFirebaseToken, async (req, res) => {
@@ -40,6 +46,9 @@ router.post('/remove', verifyFirebaseToken, async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+
+
+
 // Get cart
 // router.get('/',verifyFirebaseToken, async (req, res) => {
 //   try {
@@ -68,5 +77,13 @@ router.get('/', verifyFirebaseToken, async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
-  
+  router.delete('/clear', verifyFirebaseToken, async (req, res) => {
+    try {
+      await Cart.deleteOne({ userFirebaseId: req.user.uid });
+      res.json({ message: 'Cart cleared successfully' });
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      res.status(500).json({ error: 'Failed to clear cart' });
+    }
+  });
 export default router;
